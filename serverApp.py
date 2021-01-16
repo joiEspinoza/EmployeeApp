@@ -1,11 +1,15 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, send_from_directory, url_for, flash
 from flaskext.mysql import MySQL
 from datetime import datetime
+import os
 
 #----------------------------------------------->
 #----------------------------------------------->
 
 app = Flask( __name__ )
+
+app.secret_key="KingDevelopment"
+# flash
 
 #----------------------------------------------->
 #----------------------------------------------->
@@ -20,6 +24,11 @@ mysql.init_app( app )
 #----------------------------------------------->
 #----------------------------------------------->
 
+FOLDER = os.path.join( 'uploads' )
+app.config[ 'FOLDER' ] = FOLDER
+
+#----------------------------------------------->
+#----------------------------------------------->
 
 @app.route( '/' )
 
@@ -44,10 +53,19 @@ def index():
     cursor.execute( query )
 
     response = cursor.fetchall()
-    print( response )
-    #conn.commit()
+    #print( response )
+
 
     return render_template( 'employees/index.html', employyes = response )
+
+
+#---------------------------------------------------------|
+
+@app.route( '/uploads/<photoName>' )
+
+def uploads( photoName ):
+
+   return send_from_directory( app.config[ 'FOLDER' ], photoName )
 
 
 ###############################################################################
@@ -55,7 +73,8 @@ def index():
 
 @app.route( '/create_employye' )
 
-def create():
+def startStorage():
+
     return render_template( 'employees/create.html' )
 
 
@@ -70,11 +89,16 @@ def storage():
     email = request.form[ 'email' ]
     photo = request.files[ 'photo' ]
 
+    if name == '' or email == '' or photo == '':
+        flash( 'All fields are required' )
+        return redirect( url_for( 'startStorage' ) )
+
+
     now = datetime.now()
     time = now.strftime( '%Y%H%M%S' )
     # Crea variable con fecha actual
 
-    if photo.filename != "":
+    if photo.filename != '':
 
         newNamePhoto = time+photo.filename
         photo.save( 'uploads/'+newNamePhoto )
@@ -82,19 +106,20 @@ def storage():
     
 
     query = "INSERT INTO `employees` ( `name`, `email`, `photo` ) VALUES ( %s, %s, %s );"
-    data = ( name, email, newNamePhoto )
+    data = ( name.capitalize(), email, newNamePhoto )
 
     conn = mysql.connect()
     cursor = conn.cursor()
     cursor.execute( query, data )
     conn.commit()
 
-    return render_template( 'employees/index.html' )
+    return redirect( "/" )
 
 
 ###############################################################################
 
-@app.route( '/edit_employye/<int:id>')
+
+@app.route( '/startupdate/<int:id>')
 
 def startUpdate( id ):
 
@@ -105,7 +130,7 @@ def startUpdate( id ):
     cursor.execute( query )
 
     response = cursor.fetchall()
-    print( response )
+    #print( response )
 
     return render_template( 'employees/edit.html', employee = response )
 
@@ -121,23 +146,34 @@ def update():
     name  = request.form[ 'name' ]
     email = request.form[ 'email' ]
     photo = request.files[ 'photo' ]
-    idEm    = request.form[ 'id' ]
+    idEm  = request.form[ 'id' ]
 
-    now = datetime.now()
-    time = now.strftime( '%Y%H%M%S' )
-    # Crea variable con fecha actual
+    if name == '' or email == '':
+        flash( 'Name and Email are required' )
+        return redirect( url_for( 'startUpdate', id = idEm ) )
 
-    if photo.filename != "":
-
-        newNamePhoto = time+photo.filename
-        photo.save( 'uploads/'+newNamePhoto )
-
-
-    query = "UPDATE employees SET name = %s, email = %s, photo = %s WHERE id = %s;"
-    data = ( name, email, newNamePhoto, idEm )
+    query = "UPDATE employees SET name = %s, email = %s WHERE id = %s;"
+    data = ( name, email, idEm )
 
     conn = mysql.connect()
     cursor = conn.cursor()
+
+    now = datetime.now()
+    time = now.strftime( '%Y%H%M%S' )
+
+    if photo.filename != '':
+
+        newNamePhoto = time + photo.filename
+        photo.save( 'uploads/'+newNamePhoto )
+
+        cursor.execute( "SELECT photo FROM employees WHERE id = {0}".format( idEm ) )
+        row = cursor.fetchall()
+        #print( row )
+        os.remove( os.path.join( app.config[ 'FOLDER' ], row[0][0] ) )
+        cursor.execute( "UPDATE employees SET photo = %s WHERE id = %s",( newNamePhoto, idEm ) )
+
+        conn.commit()
+
     cursor.execute( query, data )
     conn.commit()
 
@@ -153,7 +189,14 @@ def delete( id ):
 
     query = "DELETE FROM employees WHERE id = {0}".format( id )
     conn = mysql.connect()
+
     cursor = conn.cursor()
+
+    cursor.execute( "SELECT photo FROM employees WHERE id = {0}".format( id ) )
+    row = cursor.fetchall()
+    #print( row )
+    os.remove( os.path.join( app.config[ 'FOLDER' ], row[0][0] ) )
+
     cursor.execute( query )
     conn.commit()
 

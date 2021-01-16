@@ -1,0 +1,15 @@
+html, body
+{
+   background-color: #323232;
+}
+
+
+.btn-dark
+{
+    border: 1px solid white !important;
+}
+
+.pt-40
+{
+    padding: 40px !important;
+}

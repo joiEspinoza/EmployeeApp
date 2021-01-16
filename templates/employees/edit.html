@@ -1,32 +1,58 @@
+{% include 'layouts/header.html' %}
+
+    {% with messages = get_flashed_messages() %}
+
+        {% if messages %}
+
+            {% for msg in messages %}
+
+                <div class="alert alert-dark" role="alert">
+                    {{ msg }}
+                </div>
+
+            {% endfor %}
+
+        {% endif %}
+
+    {% endwith %}
+
+    <form method="POST" action="/update" enctype="multipart/form-data">
+        
+        {% for data in employee %}
+        
+        <input type="text" name="id" hidden value="{{ data.0 }}" />
+
+        <div class="form-group mt-2">
+            <label><small class="text-muted">Name</small></label>
+            <input type="text" class="form-control" name="name" id="name" value=" {{  data.1 }}" autocomplete="off" />
+        </div>
 
 
-<form method="POST" action="/update" enctype="multipart/form-data">
-    
-    {% for data in employee %}
-    
-    <input type="text" name="id" hidden value="{{ data.0 }}" />
+        <div class="form-group mt-2">
+        <label><small class="text-muted">Email</small></label>
+        <input type="email" class="form-control" name="email" id="email" value="{{ data.2 }}" autocomplete="off" /> 
+        </div>
 
-    <div class="form-group">
-        <label><small class="text-muted">Name</small></label>
-        <input type="text" class="form-control" name="name" id="name" value="{{ data.1 }}">
+        <div class="form-group mt-3">
+            <label><small class="text-muted">Current photo</small></label><br/>
+            <img class="img-thumbnail" width="100" src="{{ url_for( 'uploads', photoName = data.3 ) }}" alt="Current Photo" />
+        </div>
+
+        <div class="form-group mt-3">
+            <label><small class="text-muted">New Photo</small></label>
+            <input type="file" class="form-control" name="photo" id="photo"/>
+        </div>
+
+    {% endfor %}
+
+        <div class="form-group mt-4">
+            <button  onclick="return confirm( 'Are you sure about edit this employee?' )" class="btn btn-dark form-control">Edit</button>
+        </div>
+        
+    </form>
+
+    <div class="form-group mt-4">
+        <a class="btn btn-dark form-control" href="{{ url_for( 'index' ) }}">Back</a>
     </div>
 
-
-    <div class="form-group">
-       <label><small class="text-muted">Email</small></label>
-       <input type="email" class="form-control" name="email" id="email" value="{{ data.2 }}"> 
-    </div>
-
-
-    <div class="form-group">
-        <label><small class="text-muted">Photo</small></label>
-        <input type="file" class="form-control" name="photo" id="photo">
-    </div>
-
-   {% endfor %}
-
-    <div class="form-group">
-        <button class="btn btn-primary form-control">Edit</button>
-    </div>
-    
-</form>
+{% include 'layouts/footer.html' %}
